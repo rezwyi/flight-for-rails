@@ -10,6 +10,9 @@ Gem::Specification.new do |s|
   
   s.authors = ['Sergey Rezvanov']
   s.email = ['sergey@rezvanov.info']
+  s.homepage = 'https://github.com/rezwyi/flight-for-rails'
+
+  s.licenses = ['MIT']
 
   s.files = `git ls-files`.split("\n")
   s.require_paths = ['lib']
