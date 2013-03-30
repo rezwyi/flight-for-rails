@@ -16,7 +16,7 @@ This gem vendors Flight files and dependecies for Rails assets pipeline.
 First add the following lines to your application `Gemfile`:
 
 ``` ruby
-gem install 'flight-for-rails', '~> 1.0.6'
+gem 'flight-for-rails', '~> 1.0.6'
 ```
 
 Then run `bundle install` to update your's gems bundle.
@@ -63,7 +63,7 @@ $ ->
   MyComponent2.attachTo '#my-component2'
 ```
 
-And don't forget add the following line to your manifest file (usualy app/assets/javascript/application.js):
+And don't forget add the following line to your manifest file (usualy `app/assets/javascript/application.js`):
 
 ```javascript
 //= require_directory ./components
