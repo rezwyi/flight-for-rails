@@ -2,7 +2,7 @@ require File.expand_path('../lib/flight-for-rails/version', __FILE__)
 
 Gem::Specification.new do |s|
   s.name = 'flight-for-rails'
-  s.summary = 'Flight javascript framework for Rails 3.1 and greater assets pipeline'
+  s.summary = 'Flight javascript framework for Rails assets pipeline'
   s.description = s.summary
 
   s.version  = FlightForRails::VERSION
@@ -18,5 +18,5 @@ Gem::Specification.new do |s|
   s.require_paths = ['lib']
 
   s.add_dependency 'rails', '>= 3.1.0'
-  s.add_dependency 'jquery-rails'
+  s.add_dependency 'jquery-rails', '>= 2.1.4'
 end
