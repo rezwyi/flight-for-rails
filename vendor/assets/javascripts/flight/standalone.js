@@ -1,4 +1,4 @@
-/*! Flight v1.1.0 | (c) Twitter, Inc. | MIT License */
+/*! Flight v1.1.1 | (c) Twitter, Inc. | MIT License */
 (function(context) {
   var factories = {}, loaded = {};
   var isArray = Array.isArray || function(obj) {
@@ -64,6 +64,7 @@
 // http://opensource.org/licenses/MIT
 // ==========================================
 define('lib/utils', [], function () {
+    'use strict';
     var arry = [];
     var DEFAULT_INTERVAL = 100;
     var utils = {
@@ -94,13 +95,13 @@ define('lib/utils', [], function () {
                 if (base) {
                     Object.keys(extra || {}).forEach(function (key) {
                         if (base[key] && protect) {
-                            throw Error('utils.push attempted to overwrite \'' + key + '\' while running in protected mode');
+                            throw new Error('utils.push attempted to overwrite "' + key + '" while running in protected mode');
                         }
                         if (typeof base[key] == 'object' && typeof extra[key] == 'object') {
-                            //recurse
+                            // recurse
                             this.push(base[key], extra[key]);
                         } else {
-                            //no protect, so extra wins
+                            // no protect, so extra wins
                             base[key] = extra[key];
                         }
                     }, this);
@@ -209,13 +210,18 @@ define('lib/utils', [], function () {
         };
     return utils;
 });
+// ==========================================
+// Copyright 2013 Twitter, Inc
+// Licensed under The MIT License
+// http://opensource.org/licenses/MIT
+// ==========================================
 define('lib/debug', [], function () {
-    var logFilter;
+    'use strict';
     //******************************************************************************************
     // Search object model
     //******************************************************************************************
     function traverse(util, searchTerm, options) {
-        var options = options || {};
+        options = options || {};
         var obj = options.obj || window;
         var path = options.path || (obj == window ? 'window' : '');
         var props = Object.keys(obj);
@@ -273,27 +279,21 @@ define('lib/debug', [], function () {
     function byName(searchTerm, options) {
         search('name', 'string', searchTerm, options);
     }
-    ;
     function byNameContains(searchTerm, options) {
         search('nameContains', 'string', searchTerm, options);
     }
-    ;
     function byType(searchTerm, options) {
         search('type', 'function', searchTerm, options);
     }
-    ;
     function byValue(searchTerm, options) {
         search('value', null, searchTerm, options);
     }
-    ;
     function byValueCoerced(searchTerm, options) {
         search('valueCoerced', null, searchTerm, options);
     }
-    ;
     function custom(fn, options) {
         traverse(fn, null, options);
     }
-    ;
     //******************************************************************************************
     // Event logging
     //******************************************************************************************
@@ -336,7 +336,7 @@ define('lib/debug', [], function () {
                 eventNames: window.localStorage && localStorage.getItem('logFilter_eventNames') || defaultEventNamesFilter,
                 actions: window.localStorage && localStorage.getItem('logFilter_actions') || defaultActionsFilter
             };
-        //reconstitute arrays
+        // reconstitute arrays
         Object.keys(result).forEach(function (k) {
             var thisProp = result[k];
             if (typeof thisProp == 'string' && thisProp !== ALL) {
@@ -379,9 +379,10 @@ define('lib/debug', [], function () {
 define('lib/compose', [
     './utils',
     './debug'
-], function (util, debug) {
+], function (utils, debug) {
+    'use strict';
     //enumerables are shims - getOwnPropertyDescriptor shim doesn't work
-    var canWriteProtect = debug.enabled && !util.isEnumerable(Object, 'getOwnPropertyDescriptor');
+    var canWriteProtect = debug.enabled && !utils.isEnumerable(Object, 'getOwnPropertyDescriptor');
     //whitelist of unlockable property names
     var dontLock = ['mixedIn'];
     if (canWriteProtect) {
@@ -438,10 +439,8 @@ define('lib/compose', [
 // Licensed under The MIT License
 // http://opensource.org/licenses/MIT
 // ==========================================
-define('lib/advice', [
-    './utils',
-    './compose'
-], function (util, compose) {
+define('lib/advice', ['./compose'], function (compose) {
+    'use strict';
     var advice = {
             around: function (base, wrapped) {
                 return function composedAround() {
@@ -477,10 +476,11 @@ define('lib/advice', [
                     this[m] = function (method, fn) {
                         compose.unlockProperty(this, method, function () {
                             if (typeof this[method] == 'function') {
-                                return this[method] = advice[m](this[method], fn);
+                                this[method] = advice[m](this[method], fn);
                             } else {
-                                return this[method] = fn;
+                                this[method] = fn;
                             }
+                            return this[method];
                         });
                     };
                 }, this);
@@ -493,7 +493,8 @@ define('lib/advice', [
 // Licensed under The MIT License
 // http://opensource.org/licenses/MIT
 // ==========================================
-define('lib/registry', ['./utils'], function (util) {
+define('lib/registry', [], function () {
+    'use strict';
     function parseEventArgs(instance, args) {
         var element, type, callback;
         var end = args.length;
@@ -625,7 +626,7 @@ define('lib/registry', ['./utils'], function (util) {
                 instance.addBind(event);
             }
         };
-        this.off = function (el, type, callback) {
+        this.off = function () {
             var event = parseEventArgs(this, arguments), instance = registry.findInstanceInfo(this);
             if (instance) {
                 instance.removeBind(event);
@@ -637,8 +638,9 @@ define('lib/registry', ['./utils'], function (util) {
                 }
             }
         };
-        //debug tools may want to add advice to trigger
-        registry.trigger = new Function();
+        // debug tools may want to add advice to trigger
+        registry.trigger = function () {
+        };
         this.teardown = function () {
             registry.removeInstance(this);
         };
@@ -658,13 +660,19 @@ define('lib/registry', ['./utils'], function (util) {
     }
     return new Registry();
 });
+// ==========================================
+// Copyright 2013 Twitter, Inc
+// Licensed under The MIT License
+// http://opensource.org/licenses/MIT
+// ==========================================
 define('lib/base', [
     './utils',
     './registry',
     './debug'
 ], function (utils, registry, debug) {
-    //common mixin allocates basic functionality - used by all component prototypes
-    //callback context is bound to component
+    'use strict';
+    // common mixin allocates basic functionality - used by all component prototypes
+    // callback context is bound to component
     var componentId = 0;
     function teardownInstance(instanceInfo) {
         instanceInfo.events.slice().forEach(function (event) {
@@ -743,7 +751,7 @@ define('lib/base', [
                 type = arguments[0];
             }
             if (typeof originalCb != 'function' && typeof originalCb != 'object') {
-                throw new Error('Unable to bind to \'' + type + '\' because the given callback is not a function or an object');
+                throw new Error('Unable to bind to "' + type + '" because the given callback is not a function or an object');
             }
             callback = originalCb.bind(this);
             callback.target = originalCb;
@@ -789,8 +797,9 @@ define('lib/base', [
             return this.$node.find(this.attr[attributeKey]);
         };
         this.initialize = function (node, attrs) {
-            attrs = attrs || {};
-            this.identity = componentId++;
+            attrs || (attrs = {});
+            //only assign identity if there isn't one (initialize can be called multiple times)
+            this.identity || (this.identity = componentId++);
             if (!node) {
                 throw new Error('Component needs a node');
             }
@@ -801,8 +810,8 @@ define('lib/base', [
                 this.node = node;
                 this.$node = $(node);
             }
-            //merge defaults with supplied options
-            //put options in attr.__proto__ to avoid merge overhead
+            // merge defaults with supplied options
+            // put options in attr.__proto__ to avoid merge overhead
             var attr = Object.create(attrs);
             for (var key in this.defaults) {
                 if (!attrs.hasOwnProperty(key)) {
@@ -828,10 +837,8 @@ define('lib/base', [
 // Licensed under The MIT License
 // http://opensource.org/licenses/MIT
 // ==========================================
-define('lib/logger', [
-    './compose',
-    './utils'
-], function (compose, util) {
+define('lib/logger', ['./utils'], function (utils) {
+    'use strict';
     var actionSymbols = {
             on: '<-',
             trigger: '->',
@@ -847,13 +854,13 @@ define('lib/logger', [
         ].join(result) : result;
     }
     function log(action, component, eventArgs) {
-        var name, elem, fn, fnName, logFilter, toRegExp, actionLoggable, nameLoggable;
+        var name, elem, fn, logFilter, toRegExp, actionLoggable, nameLoggable;
         if (typeof eventArgs[eventArgs.length - 1] == 'function') {
             fn = eventArgs.pop();
-            fn = fn.unbound || fn;    //use unbound version if any (better info)
+            fn = fn.unbound || fn;    // use unbound version if any (better info)
         }
         if (typeof eventArgs[eventArgs.length - 1] == 'object') {
-            eventArgs.pop();    //trigger data arg - not logged right now
+            eventArgs.pop();    // trigger data arg - not logged right now
         }
         if (eventArgs.length == 2) {
             elem = eventArgs[0];
@@ -880,13 +887,13 @@ define('lib/logger', [
     }
     function withLogging() {
         this.before('trigger', function () {
-            log('trigger', this, util.toArray(arguments));
+            log('trigger', this, utils.toArray(arguments));
         });
         this.before('on', function () {
-            log('on', this, util.toArray(arguments));
+            log('on', this, utils.toArray(arguments));
         });
-        this.before('off', function (eventArgs) {
-            log('off', this, util.toArray(arguments));
+        this.before('off', function () {
+            log('off', this, utils.toArray(arguments));
         });
     }
     return withLogging;
@@ -905,8 +912,9 @@ define('lib/component', [
     './logger',
     './debug'
 ], function (advice, utils, compose, withBase, registry, withLogging, debug) {
+    'use strict';
     var functionNameRegEx = /function (.*?)\s?\(/;
-    //teardown for all instances of this constructor
+    // teardown for all instances of this constructor
     function teardownAll() {
         var componentInfo = registry.findComponentInfo(this);
         componentInfo && Object.keys(componentInfo.instances).forEach(function (k) {
@@ -938,11 +946,10 @@ define('lib/component', [
             throw new Error('Component needs to be attachTo\'d a jQuery object, native node or selector string');
         }
         var options = utils.merge.apply(utils, args);
+        var componentInfo = registry.findComponentInfo(this);
         $(selector).each(function (i, node) {
-            var rawNode = node.jQuery ? node[0] : node;
-            var componentInfo = registry.findComponentInfo(this);
-            if (componentInfo && componentInfo.isAttachedTo(rawNode)) {
-                //already attached
+            if (componentInfo && componentInfo.isAttachedTo(node)) {
+                // already attached
                 return;
             }
             new this().initialize(node, options);
@@ -954,8 +961,8 @@ define('lib/component', [
     function define() {
         // unpacking arguments by hand benchmarked faster
         var l = arguments.length;
+        // add three for common mixins
         var mixins = new Array(l + 3);
-        //add three for common mixins
         for (var i = 0; i < l; i++)
             mixins[i] = arguments[i];
         var Component = function () {
@@ -963,7 +970,7 @@ define('lib/component', [
         Component.toString = Component.prototype.toString = function () {
             var prettyPrintMixins = mixins.map(function (mixin) {
                     if (mixin.name == null) {
-                        //function name property not supported by this browser, use regex
+                        // function name property not supported by this browser, use regex
                         var m = mixin.toString().match(functionNameRegEx);
                         return m && m[1] ? m[1] : '';
                     } else {
@@ -975,7 +982,7 @@ define('lib/component', [
         if (debug.enabled) {
             Component.describe = Component.prototype.describe = Component.toString();
         }
-        //'options' is optional hash to be merged with 'defaults' in the component definition
+        // 'options' is optional hash to be merged with 'defaults' in the component definition
         Component.attachTo = attachTo;
         Component.teardownAll = teardownAll;
         // prepend common mixins to supplied list, then mixin all flavors
@@ -1007,6 +1014,7 @@ define('lib/index', [
     './registry',
     './utils'
 ], function (advice, component, compose, logger, registry, utils) {
+    'use strict';
     return {
         advice: advice,
         component: component,
