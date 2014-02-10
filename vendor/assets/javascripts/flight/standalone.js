@@ -1,4 +1,4 @@
-/*! Flight v1.1.1 | (c) Twitter, Inc. | MIT License */
+/*! Flight v1.1.2 | (c) Twitter, Inc. | MIT License */
 (function(context) {
   var factories = {}, loaded = {};
   var isArray = Array.isArray || function(obj) {
@@ -196,7 +196,7 @@ define('lib/utils', [], function () {
                 return function (e, data) {
                     var target = $(e.target), parent;
                     Object.keys(rules).forEach(function (selector) {
-                        if ((parent = target.closest(selector)).length) {
+                        if (!e.isPropagationStopped() && (parent = target.closest(selector)).length) {
                             data = data || {};
                             data.el = parent[0];
                             return rules[selector].apply(this, [
@@ -205,6 +205,17 @@ define('lib/utils', [], function () {
                             ]);
                         }
                     }, this);
+                };
+            },
+            once: function (func) {
+                var ran, result;
+                return function () {
+                    if (ran) {
+                        return result;
+                    }
+                    result = func.apply(this, arguments);
+                    ran = true;
+                    return result;
                 };
             }
         };
@@ -217,9 +228,9 @@ define('lib/utils', [], function () {
 // ==========================================
 define('lib/debug', [], function () {
     'use strict';
-    //******************************************************************************************
+    // ==========================================
     // Search object model
-    //******************************************************************************************
+    // ==========================================
     function traverse(util, searchTerm, options) {
         options = options || {};
         var obj = options.obj || window;
@@ -294,9 +305,9 @@ define('lib/debug', [], function () {
     function custom(fn, options) {
         traverse(fn, null, options);
     }
-    //******************************************************************************************
+    // ==========================================
     // Event logging
-    //******************************************************************************************
+    // ==========================================
     var ALL = 'all';
     //no filter
     //no logging by default
@@ -755,13 +766,11 @@ define('lib/base', [
             }
             callback = originalCb.bind(this);
             callback.target = originalCb;
-            // if the original callback is already branded by jQuery's guid, copy it to the context-bound version
-            if (originalCb.guid) {
-                callback.guid = originalCb.guid;
-            }
+            callback.context = this;
             $element.on(type, callback);
-            // get jquery's guid from our bound fn, so unbinding will work
-            originalCb.guid = callback.guid;
+            // store every bound version of the callback
+            originalCb.bound || (originalCb.bound = []);
+            originalCb.bound.push(callback);
             return callback;
         };
         this.off = function () {
@@ -777,6 +786,16 @@ define('lib/base', [
             } else {
                 $element = this.$node;
                 type = arguments[0];
+            }
+            if (callback) {
+                //set callback to version bound against this instance
+                callback.bound && callback.bound.some(function (fn, i, arr) {
+                    if (fn.context && this.identity == fn.context.identity) {
+                        arr.splice(i, 1);
+                        callback = fn;
+                        return true;
+                    }
+                }, this);
             }
             return $element.off(type, callback);
         };
@@ -854,35 +873,41 @@ define('lib/logger', ['./utils'], function (utils) {
         ].join(result) : result;
     }
     function log(action, component, eventArgs) {
-        var name, elem, fn, logFilter, toRegExp, actionLoggable, nameLoggable;
+        if (!window.DEBUG || !window.DEBUG.enabled)
+            return;
+        var name, eventType, elem, fn, logFilter, toRegExp, actionLoggable, nameLoggable;
         if (typeof eventArgs[eventArgs.length - 1] == 'function') {
             fn = eventArgs.pop();
             fn = fn.unbound || fn;    // use unbound version if any (better info)
         }
-        if (typeof eventArgs[eventArgs.length - 1] == 'object') {
-            eventArgs.pop();    // trigger data arg - not logged right now
-        }
-        if (eventArgs.length == 2) {
-            elem = eventArgs[0];
-            name = eventArgs[1];
-        } else {
+        if (eventArgs.length == 1) {
             elem = component.$node[0];
-            name = eventArgs[0];
-        }
-        if (window.DEBUG && window.DEBUG.enabled) {
-            logFilter = DEBUG.events.logFilter;
-            // no regex for you, actions...
-            actionLoggable = logFilter.actions == 'all' || logFilter.actions.indexOf(action) > -1;
-            // event name filter allow wildcards or regex...
-            toRegExp = function (expr) {
-                return expr.test ? expr : new RegExp('^' + expr.replace(/\*/g, '.*') + '$');
-            };
-            nameLoggable = logFilter.eventNames == 'all' || logFilter.eventNames.some(function (e) {
-                return toRegExp(e).test(name);
-            });
-            if (actionLoggable && nameLoggable) {
-                console.info(actionSymbols[action], action, '[' + name + ']', elemToString(elem), component.constructor.describe.split(' ').slice(0, 3).join(' '));
+            eventType = eventArgs[0];
+        } else if (eventArgs.length == 2) {
+            if (typeof eventArgs[1] == 'object' && !eventArgs[1].type) {
+                elem = component.$node[0];
+                eventType = eventArgs[0];
+            } else {
+                elem = eventArgs[0];
+                eventType = eventArgs[1];
             }
+        } else {
+            elem = eventArgs[0];
+            eventType = eventArgs[1];
+        }
+        name = typeof eventType == 'object' ? eventType.type : eventType;
+        logFilter = DEBUG.events.logFilter;
+        // no regex for you, actions...
+        actionLoggable = logFilter.actions == 'all' || logFilter.actions.indexOf(action) > -1;
+        // event name filter allow wildcards or regex...
+        toRegExp = function (expr) {
+            return expr.test ? expr : new RegExp('^' + expr.replace(/\*/g, '.*') + '$');
+        };
+        nameLoggable = logFilter.eventNames == 'all' || logFilter.eventNames.some(function (e) {
+            return toRegExp(e).test(name);
+        });
+        if (actionLoggable && nameLoggable) {
+            console.info(actionSymbols[action], action, '[' + name + ']', elemToString(elem), component.constructor.describe.split(' ').slice(0, 3).join(' '));
         }
     }
     function withLogging() {
@@ -919,7 +944,11 @@ define('lib/component', [
         var componentInfo = registry.findComponentInfo(this);
         componentInfo && Object.keys(componentInfo.instances).forEach(function (k) {
             var info = componentInfo.instances[k];
-            info.instance.teardown();
+            // It's possible that a previous teardown caused another component to teardown,
+            // so we can't assume that the instances object is as it was.
+            if (info && info.instance) {
+                info.instance.teardown();
+            }
         });
     }
     function checkSerializable(type, data) {
