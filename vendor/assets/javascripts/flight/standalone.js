@@ -1,4 +1,4 @@
-/*! Flight v1.1.2 | (c) Twitter, Inc. | MIT License */
+/*! Flight v1.1.3 | (c) Twitter, Inc. | MIT License */
 (function(context) {
   var factories = {}, loaded = {};
   var isArray = Array.isArray || function(obj) {
@@ -611,6 +611,11 @@ define('lib/registry', [], function () {
         this.findInstanceInfo = function (instance) {
             return this.allInstances[instance.identity] || null;
         };
+        this.getBoundEventNames = function (instance) {
+            return this.findInstanceInfo(instance).events.map(function (ev) {
+                return ev.type;
+            });
+        };
         this.findInstanceInfoByNode = function (node) {
             var result = [];
             Object.keys(this.allInstances).forEach(function (k) {
@@ -707,6 +712,11 @@ define('lib/base', [
             ].join(' '));
         }
     }
+    function proxyEventTo(targetEvent) {
+        return function (e, data) {
+            $(e.target).trigger(targetEvent, data);
+        };
+    }
     function withBase() {
         // delegate trigger, bind and unbind to an element
         // if $element not supplied, use component's node
@@ -751,6 +761,8 @@ define('lib/base', [
             if (typeof origin == 'object') {
                 //delegate callback
                 originalCb = utils.delegate(this.resolveDelegateRules(origin));
+            } else if (typeof origin == 'string') {
+                originalCb = proxyEventTo(origin);
             } else {
                 originalCb = origin;
             }
@@ -788,8 +800,10 @@ define('lib/base', [
                 type = arguments[0];
             }
             if (callback) {
+                //this callback may be the original function or a bound version
+                var boundFunctions = callback.target ? callback.target.bound : callback.bound || [];
                 //set callback to version bound against this instance
-                callback.bound && callback.bound.some(function (fn, i, arr) {
+                boundFunctions && boundFunctions.some(function (fn, i, arr) {
                     if (fn.context && this.identity == fn.context.identity) {
                         arr.splice(i, 1);
                         callback = fn;
@@ -805,7 +819,7 @@ define('lib/base', [
                 if (!(r in this.attr)) {
                     throw new Error('Component "' + this.toString() + '" wants to listen on "' + r + '" but no such attribute was defined.');
                 }
-                rules[this.attr[r]] = ruleInfo[r];
+                rules[this.attr[r]] = typeof ruleInfo[r] == 'string' ? proxyEventTo(ruleInfo[r]) : ruleInfo[r];
             }, this);
             return rules;
         };
@@ -875,7 +889,7 @@ define('lib/logger', ['./utils'], function (utils) {
     function log(action, component, eventArgs) {
         if (!window.DEBUG || !window.DEBUG.enabled)
             return;
-        var name, eventType, elem, fn, logFilter, toRegExp, actionLoggable, nameLoggable;
+        var name, eventType, elem, fn, payload, logFilter, toRegExp, actionLoggable, nameLoggable, info;
         if (typeof eventArgs[eventArgs.length - 1] == 'function') {
             fn = eventArgs.pop();
             fn = fn.unbound || fn;    // use unbound version if any (better info)
@@ -883,17 +897,20 @@ define('lib/logger', ['./utils'], function (utils) {
         if (eventArgs.length == 1) {
             elem = component.$node[0];
             eventType = eventArgs[0];
-        } else if (eventArgs.length == 2) {
-            if (typeof eventArgs[1] == 'object' && !eventArgs[1].type) {
-                elem = component.$node[0];
-                eventType = eventArgs[0];
-            } else {
-                elem = eventArgs[0];
-                eventType = eventArgs[1];
+        } else if (eventArgs.length == 2 && typeof eventArgs[1] == 'object' && !eventArgs[1].type) {
+            //2 args, first arg is not elem
+            elem = component.$node[0];
+            eventType = eventArgs[0];
+            if (action == 'trigger') {
+                payload = eventArgs[1];
             }
         } else {
+            //2+ args, first arg is elem
             elem = eventArgs[0];
             eventType = eventArgs[1];
+            if (action == 'trigger') {
+                payload = eventArgs[2];
+            }
         }
         name = typeof eventType == 'object' ? eventType.type : eventType;
         logFilter = DEBUG.events.logFilter;
@@ -907,7 +924,15 @@ define('lib/logger', ['./utils'], function (utils) {
             return toRegExp(e).test(name);
         });
         if (actionLoggable && nameLoggable) {
-            console.info(actionSymbols[action], action, '[' + name + ']', elemToString(elem), component.constructor.describe.split(' ').slice(0, 3).join(' '));
+            info = [
+                actionSymbols[action],
+                action,
+                '[' + name + ']'
+            ];
+            payload && info.push(payload);
+            info.push(elemToString(elem));
+            info.push(component.constructor.describe.split(' ').slice(0, 3).join(' '));
+            console.info.apply(console, info);
         }
     }
     function withLogging() {
