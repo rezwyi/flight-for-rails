@@ -3,7 +3,7 @@ FlightForRails
 
 FlightForRails is a plugin for Rails assets pipeline, which integrates your applicaiton with Twitter Flight javascript framework. Flight is a lightweight, component-based javascript framework that maps behavior to DOM nodes. Twitter uses it for their web applications. Why do not you try it? :)
 
-For more information see [official Flight page](http://twitter.github.com/flight).
+For more information see [official Flight page](http://twitter.github.com/flight) and [changelog](https://github.com/flightjs/flight/blob/master/CHANGELOG.md).
 
 ## Browser Support
 
@@ -16,7 +16,7 @@ This gem vendors Flight files and dependecies for Rails assets pipeline.
 First add the following lines to your application `Gemfile`:
 
 ``` ruby
-gem 'flight-for-rails', '~> 1.1.2'
+gem 'flight-for-rails', '~> 1.1.3'
 ```
 
 Then run `bundle install` to update your's gems bundle.
