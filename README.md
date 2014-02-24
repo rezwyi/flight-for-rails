@@ -71,10 +71,6 @@ And don't forget add the following line to your manifest file (usualy `app/asset
 
 Pretty awesome! Enjoy!
 
-## Authors
-
-+ [Sergey Rezvanov](http://github.com/rezwyi)
-
 ## Copyright
 
 See LICENSE file.
