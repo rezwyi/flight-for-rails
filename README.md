@@ -40,7 +40,7 @@ Simple example:
 ``` coffeescript
 # app/assets/javascript/components/my-component.js.coffee
 $ ->
-  MyComponent = flight.component
+  MyComponent = flight.component ->
     @after 'initialize', ->
       @on 'click', @triggerMyEvent
 
@@ -53,7 +53,7 @@ $ ->
 ``` coffeescript
 # app/assets/javascript/components/my-component-2.js.coffee
 $ ->
-  MyComponent2 = flight.component
+  MyComponent2 = flight.component ->
     @after 'initialize', ->
       @on 'myEvent', @handleMyEvent
 
