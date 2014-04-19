@@ -1,4 +1,4 @@
-/*! Flight v1.1.3 | (c) Twitter, Inc. | MIT License */
+/*! Flight v1.1.4 | (c) Twitter, Inc. | MIT License */
 (function(context) {
   var factories = {}, loaded = {};
   var isArray = Array.isArray || function(obj) {
@@ -213,8 +213,8 @@ define('lib/utils', [], function () {
                     if (ran) {
                         return result;
                     }
-                    result = func.apply(this, arguments);
                     ran = true;
+                    result = func.apply(this, arguments);
                     return result;
                 };
             }
@@ -310,10 +310,11 @@ define('lib/debug', [], function () {
     // ==========================================
     var ALL = 'all';
     //no filter
-    //no logging by default
-    var defaultEventNamesFilter = [];
-    var defaultActionsFilter = [];
-    var logFilter = retrieveLogFilter();
+    //log nothing by default
+    var logFilter = {
+            eventNames: [],
+            actions: []
+        };
     function filterEventLogsByAction() {
         var actions = [].slice.call(arguments);
         logFilter.eventNames.length || (logFilter.eventNames = ALL);
@@ -337,24 +338,32 @@ define('lib/debug', [], function () {
         saveLogFilter();
     }
     function saveLogFilter() {
-        if (window.localStorage) {
-            localStorage.setItem('logFilter_eventNames', logFilter.eventNames);
-            localStorage.setItem('logFilter_actions', logFilter.actions);
+        try {
+            if (window.localStorage) {
+                localStorage.setItem('logFilter_eventNames', logFilter.eventNames);
+                localStorage.setItem('logFilter_actions', logFilter.actions);
+            }
+        } catch (ignored) {
         }
+        ;
     }
     function retrieveLogFilter() {
-        var result = {
-                eventNames: window.localStorage && localStorage.getItem('logFilter_eventNames') || defaultEventNamesFilter,
-                actions: window.localStorage && localStorage.getItem('logFilter_actions') || defaultActionsFilter
-            };
-        // reconstitute arrays
-        Object.keys(result).forEach(function (k) {
-            var thisProp = result[k];
+        var eventNames, actions;
+        try {
+            eventNames = window.localStorage && localStorage.getItem('logFilter_eventNames');
+            actions = window.localStorage && localStorage.getItem('logFilter_actions');
+        } catch (ignored) {
+            return;
+        }
+        eventNames && (logFilter.eventNames = eventNames);
+        actions && (logFilter.actions = actions);
+        // reconstitute arrays in place
+        Object.keys(logFilter).forEach(function (k) {
+            var thisProp = logFilter[k];
             if (typeof thisProp == 'string' && thisProp !== ALL) {
-                result[k] = thisProp.split(',');
+                logFilter[k] = thisProp ? thisProp.split(',') : [];
             }
         });
-        return result;
     }
     return {
         enable: function (enable) {
@@ -363,6 +372,7 @@ define('lib/debug', [], function () {
                 console.info('Booting in DEBUG mode');
                 console.info('You can configure event logging with DEBUG.events.logAll()/logNone()/logByName()/logByAction()');
             }
+            retrieveLogFilter();
             window.DEBUG = this;
         },
         find: {
@@ -431,13 +441,13 @@ define('lib/compose', [
     }
     function mixin(base, mixins) {
         base.mixedIn = base.hasOwnProperty('mixedIn') ? base.mixedIn : [];
-        mixins.forEach(function (mixin) {
-            if (base.mixedIn.indexOf(mixin) == -1) {
+        for (var i = 0; i < mixins.length; i++) {
+            if (base.mixedIn.indexOf(mixins[i]) == -1) {
                 setPropertyWritability(base, false);
-                mixin.call(base);
-                base.mixedIn.push(mixin);
+                mixins[i].call(base);
+                base.mixedIn.push(mixins[i]);
             }
-        });
+        }
         setPropertyWritability(base, true);
     }
     return {
@@ -932,6 +942,7 @@ define('lib/logger', ['./utils'], function (utils) {
             payload && info.push(payload);
             info.push(elemToString(elem));
             info.push(component.constructor.describe.split(' ').slice(0, 3).join(' '));
+            console.groupCollapsed && action == 'trigger' && console.groupCollapsed(action, name);
             console.info.apply(console, info);
         }
     }
@@ -939,6 +950,11 @@ define('lib/logger', ['./utils'], function (utils) {
         this.before('trigger', function () {
             log('trigger', this, utils.toArray(arguments));
         });
+        if (console.groupCollapsed) {
+            this.after('trigger', function () {
+                console.groupEnd();
+            });
+        }
         this.before('on', function () {
             log('on', this, utils.toArray(arguments));
         });
@@ -1009,35 +1025,48 @@ define('lib/component', [
             new this().initialize(node, options);
         }.bind(this));
     }
+    function prettyPrintMixins() {
+        //could be called from constructor or constructor.prototype
+        var mixedIn = this.mixedIn || this.prototype.mixedIn || [];
+        return mixedIn.map(function (mixin) {
+            if (mixin.name == null) {
+                // function name property not supported by this browser, use regex
+                var m = mixin.toString().match(functionNameRegEx);
+                return m && m[1] ? m[1] : '';
+            } else {
+                return mixin.name != 'withBase' ? mixin.name : '';
+            }
+        }).filter(Boolean).join(', ');
+    }
+    ;
     // define the constructor for a custom component type
     // takes an unlimited number of mixin functions as arguments
     // typical api call with 3 mixins: define(timeline, withTweetCapability, withScrollCapability);
     function define() {
         // unpacking arguments by hand benchmarked faster
         var l = arguments.length;
-        // add three for common mixins
-        var mixins = new Array(l + 3);
+        var mixins = new Array(l);
         for (var i = 0; i < l; i++)
             mixins[i] = arguments[i];
         var Component = function () {
         };
-        Component.toString = Component.prototype.toString = function () {
-            var prettyPrintMixins = mixins.map(function (mixin) {
-                    if (mixin.name == null) {
-                        // function name property not supported by this browser, use regex
-                        var m = mixin.toString().match(functionNameRegEx);
-                        return m && m[1] ? m[1] : '';
-                    } else {
-                        return mixin.name != 'withBase' ? mixin.name : '';
-                    }
-                }).filter(Boolean).join(', ');
-            return prettyPrintMixins;
-        };
+        Component.toString = Component.prototype.toString = prettyPrintMixins;
         if (debug.enabled) {
             Component.describe = Component.prototype.describe = Component.toString();
         }
         // 'options' is optional hash to be merged with 'defaults' in the component definition
         Component.attachTo = attachTo;
+        // enables extension of existing "base" Components
+        Component.mixin = function () {
+            var newComponent = define();
+            //TODO: fix pretty print
+            var newPrototype = Object.create(Component.prototype);
+            newPrototype.mixedIn = [].concat(Component.prototype.mixedIn);
+            compose.mixin(newPrototype, arguments);
+            newComponent.prototype = newPrototype;
+            newComponent.prototype.constructor = newComponent;
+            return newComponent;
+        };
         Component.teardownAll = teardownAll;
         // prepend common mixins to supplied list, then mixin all flavors
         if (debug.enabled) {
