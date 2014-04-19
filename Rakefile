@@ -1,6 +1,8 @@
 require File.expand_path('../lib/flight-for-rails/version', __FILE__)
+
 require 'rubygems'
 require 'bundler/setup'
+require 'open-uri'
 
 Bundler::GemHelper.install_tasks
 
