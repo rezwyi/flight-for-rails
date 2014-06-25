@@ -20,7 +20,7 @@ This gem vendors Flight files and dependecies for Rails assets pipeline.
 First add the following lines to your application `Gemfile`:
 
 ``` ruby
-gem 'flight-for-rails', '~> 1.1.4'
+gem 'flight-for-rails', '~> 1.2.0'
 ```
 
 Then run `bundle install` to update your's gems bundle.
