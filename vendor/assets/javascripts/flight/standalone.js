@@ -1,4 +1,4 @@
-/*! Flight v1.4.0 | (c) Twitter, Inc. | MIT License */
+/*! Flight v1.5.0 | (c) Twitter, Inc. | MIT License */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -168,6 +168,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     'use strict';
 
     var functionNameRegEx = /function (.*?)\s?\(/;
+    var ignoredMixin = {
+      withBase: true,
+      withLogging: true
+    };
 
     // teardown for all instances of this constructor
     function teardownAll() {
@@ -216,9 +220,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
           // function name property not supported by this browser, use regex
           var m = mixin.toString().match(functionNameRegEx);
           return (m && m[1]) ? m[1] : '';
-        } else {
-          return (mixin.name != 'withBase') ? mixin.name : '';
         }
+        return (!ignoredMixin[mixin.name] ? mixin.name : '');
       }).filter(Boolean).join(', ');
     };
 
@@ -453,6 +456,12 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
         retrieveLogFilter();
 
         window.DEBUG = this;
+      },
+
+      warn: function (message) {
+        if (!window.console) { return; }
+        var fn = (console.warn || console.log);
+        fn.call(console, this.toString() + ': ' + message);
       },
 
       registry: registry,
@@ -1146,11 +1155,18 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       try {
         window.postMessage(data, '*');
       } catch (e) {
-        console.log('unserializable data for event',type,':',data);
-        throw new Error(
-          ['The event', type, 'on component', this.toString(), 'was triggered with non-serializable data'].join(' ')
-        );
+        debug.warn.call(this, [
+          'Event "', type, '" was triggered with non-serializable data. ',
+          'Flight recommends you avoid passing non-serializable data in events.'
+        ].join(''));
       }
+    }
+
+    function warnAboutReferenceType(key) {
+      debug.warn.call(this, [
+        'Attribute "', key, '" defaults to an array or object. ',
+        'Enclose this in a function to avoid sharing between component instances.'
+      ].join(''));
     }
 
     function initAttributes(attrs) {
@@ -1166,8 +1182,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
         for (var i = incomingKeys.length - 1; i >= 0; i--) {
           if (definedKeys.indexOf(incomingKeys[i]) == -1) {
-            console.warn('Passed unused attributes including "' + incomingKeys[i] +
-                         '" to component "' + this.toString() + '".');
+            debug.warn.call(this, 'Passed unused attribute "' + incomingKeys[i] + '".');
             break;
           }
         }
@@ -1178,6 +1193,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
           if (this.attr[key] === null) {
             throw new Error('Required attribute "' + key +
                             '" not specified in attachTo for component "' + this.toString() + '".');
+          }
+          // Warn about reference types in attributes
+          if (debug.enabled && typeof this.attr[key] === 'object') {
+            warnAboutReferenceType.call(this, key);
           }
         } else {
           this.attr[key] = attrs[key];
@@ -1198,6 +1217,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       for (var key in this.defaults) {
         if (!attrs.hasOwnProperty(key)) {
           attr[key] = this.defaults[key];
+          // Warn about reference types in defaultAttrs
+          if (debug.enabled && typeof this.defaults[key] === 'object') {
+            warnAboutReferenceType.call(this, key);
+          }
         }
       }
 
