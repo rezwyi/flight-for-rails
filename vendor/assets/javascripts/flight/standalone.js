@@ -1,4 +1,4 @@
-/*! Flight v1.3.0 | (c) Twitter, Inc. | MIT License */
+/*! Flight v1.4.0 | (c) Twitter, Inc. | MIT License */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -65,7 +65,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     __webpack_require__(5),
     __webpack_require__(6),
     __webpack_require__(7)
-  ], __WEBPACK_AMD_DEFINE_RESULT__ = (function(advice, component, compose, debug, logger, registry, utils) {
+  ], __WEBPACK_AMD_DEFINE_RESULT__ = function(advice, component, compose, debug, logger, registry, utils) {
     'use strict';
 
     return {
@@ -78,7 +78,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       utils: utils
     };
 
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -89,7 +89,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [
     __webpack_require__(7)
-  ], __WEBPACK_AMD_DEFINE_RESULT__ = (function(utils) {
+  ], __WEBPACK_AMD_DEFINE_RESULT__ = function(utils) {
     'use strict';
 
     var advice = {
@@ -128,24 +128,26 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       withAdvice: function() {
         ['before', 'after', 'around'].forEach(function(m) {
           this[m] = function(method, fn) {
+            var methods = method.trim().split(' ');
 
-            utils.mutateProperty(this, method, function() {
-              if (typeof this[method] == 'function') {
-                this[method] = advice[m](this[method], fn);
-              } else {
-                this[method] = fn;
-              }
+            methods.forEach(function(i) {
+              utils.mutateProperty(this, i, function() {
+                if (typeof this[i] == 'function') {
+                  this[i] = advice[m](this[i], fn);
+                } else {
+                  this[i] = fn;
+                }
 
-              return this[method];
-            });
-
+                return this[i];
+              });
+            }, this);
           };
         }, this);
       }
     };
 
     return advice;
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -162,7 +164,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     __webpack_require__(6),
     __webpack_require__(5),
     __webpack_require__(4)
-  ], __WEBPACK_AMD_DEFINE_RESULT__ = (function(advice, utils, compose, withBase, registry, withLogging, debug) {
+  ], __WEBPACK_AMD_DEFINE_RESULT__ = function(advice, utils, compose, withBase, registry, withLogging, debug) {
     'use strict';
 
     var functionNameRegEx = /function (.*?)\s?\(/;
@@ -273,7 +275,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     };
 
     return define;
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -284,7 +286,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [
     __webpack_require__(7)
-  ], __WEBPACK_AMD_DEFINE_RESULT__ = (function(utils) {
+  ], __WEBPACK_AMD_DEFINE_RESULT__ = function(utils) {
     'use strict';
 
     var dontLock = ['mixedIn', 'attrDef'];
@@ -298,7 +300,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     }
 
     function mixin(base, mixins) {
-      base.mixedIn = base.hasOwnProperty('mixedIn') ? base.mixedIn : [];
+      base.mixedIn = Object.prototype.hasOwnProperty.call(base, 'mixedIn') ? base.mixedIn : [];
 
       for (var i = 0; i < mixins.length; i++) {
         if (base.mixedIn.indexOf(mixins[i]) == -1) {
@@ -315,7 +317,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       mixin: mixin
     };
 
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -324,7 +326,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2013 Twitter, Inc. Licensed under The MIT License. http://opensource.org/licenses/MIT */
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(6)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(registry) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(6)], __WEBPACK_AMD_DEFINE_RESULT__ = function(registry) {
     'use strict';
 
     // ==========================================
@@ -479,7 +481,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
         logNone: hideAllEventLogs
       }
     };
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -490,7 +492,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [
     __webpack_require__(7)
-  ], __WEBPACK_AMD_DEFINE_RESULT__ = (function(utils) {
+  ], __WEBPACK_AMD_DEFINE_RESULT__ = function(utils) {
     'use strict';
 
     var actionSymbols = {
@@ -556,7 +558,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
         info.push(elemToString(elem));
         info.push(component.constructor.describe.split(' ').slice(0,3).join(' '));
         console.groupCollapsed && action == 'trigger' && console.groupCollapsed(action, name);
-        console.info.apply(console, info);
+        // IE9 doesn't define `apply` for console methods, but this works everywhere:
+        Function.prototype.apply.call(console.info, console, info);
       }
     }
 
@@ -578,7 +581,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     }
 
     return withLogging;
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -587,19 +590,19 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2013 Twitter, Inc. Licensed under The MIT License. http://opensource.org/licenses/MIT */
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function() {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function() {
     'use strict';
 
     function parseEventArgs(instance, args) {
       var element, type, callback;
       var end = args.length;
 
-      if (typeof args[end - 1] === 'function') {
+      if (typeof args[end - 1] == 'function') {
         end -= 1;
         callback = args[end];
       }
 
-      if (typeof args[end - 1] === 'object') {
+      if (typeof args[end - 1] == 'object') {
         end -= 1;
       }
 
@@ -803,7 +806,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     }
 
     return new Registry;
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -812,7 +815,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 2013 Twitter, Inc. Licensed under The MIT License. http://opensource.org/licenses/MIT */
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(debug) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(4)], __WEBPACK_AMD_DEFINE_RESULT__ = function(debug) {
     'use strict';
 
     var DEFAULT_INTERVAL = 100;
@@ -865,7 +868,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       //   var base = {a:2, b:{bb:4, cc:5}};
       //   var extra = {a:4, b:{cc:7, dd:1}};
       //   merge(base, extra, true); //{a:4, b:{bb:4, cc:7, dd:1}}
-      //   base; //{a:2, b:6}
+      //   base; //{a:2, b:{bb:4, cc:5}};
 
       merge: function(/*obj1, obj2,....deepCopy*/) {
         // unpacking arguments by hand benchmarked faster
@@ -1047,7 +1050,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
           Object.keys(rules).forEach(function(selector) {
             if (!e.isPropagationStopped() && (parent = target.closest(selector)).length) {
               data = data || {};
-              data.el = parent[0];
+              e.currentTarget = data.el = parent[0];
               return rules[selector].apply(this, [e, data]);
             }
           }, this);
@@ -1108,7 +1111,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     };
 
     return utils;
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ },
@@ -1121,7 +1124,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     __webpack_require__(7),
     __webpack_require__(6),
     __webpack_require__(4)
-  ], __WEBPACK_AMD_DEFINE_RESULT__ = (function(utils, registry, debug) {
+  ], __WEBPACK_AMD_DEFINE_RESULT__ = function(utils, registry, debug) {
     'use strict';
 
     // common mixin allocates basic functionality - used by all component prototypes
@@ -1171,7 +1174,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       }
 
       for (var key in this.attrDef.prototype) {
-        if (typeof attrs[key]  == 'undefined') {
+        if (typeof attrs[key] == 'undefined') {
           if (this.attr[key] === null) {
             throw new Error('Required attribute "' + key +
                             '" not specified in attachTo for component "' + this.toString() + '".');
@@ -1250,7 +1253,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
           checkSerializable.call(this, type, data);
         }
 
-        if (typeof this.attr.eventData === 'object') {
+        if (typeof this.attr.eventData == 'object') {
           data = $.extend(true, {}, this.attr.eventData, data);
         }
 
@@ -1418,9 +1421,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     }
 
     return withBase;
-  }.apply(null, __WEBPACK_AMD_DEFINE_ARRAY__)), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
 /***/ }
 /******/ ])
-})
+});
