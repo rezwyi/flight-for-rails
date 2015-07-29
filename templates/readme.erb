@@ -7,7 +7,7 @@ FlightForRails
 
 FlightForRails is a plugin for Rails assets pipeline, which integrates your applicaiton with Twitter Flight javascript framework. Flight is a lightweight, component-based javascript framework that maps behavior to DOM nodes. Twitter uses it for their web applications. Why do not you try it? :)
 
-For more information see [official Flight page](http://twitter.github.com/flight) and [changelog](https://github.com/flightjs/flight/blob/master/CHANGELOG.md).
+For more information see [official Flight page](http://flightjs.github.io) and [changelog](https://github.com/flightjs/flight/blob/master/CHANGELOG.md).
 
 ## Browser Support
 
