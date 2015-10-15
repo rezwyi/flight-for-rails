@@ -1,4 +1,4 @@
-/*! Flight v1.5.0 | (c) Twitter, Inc. | MIT License */
+/*! Flight v1.5.1 | (c) Twitter, Inc. | MIT License */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -228,8 +228,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
     // define the constructor for a custom component type
     // takes an unlimited number of mixin functions as arguments
-    // typical api call with 3 mixins: define(timeline, withTweetCapability, withScrollCapability);
-    function define(/*mixins*/) {
+    // typical api call with 3 mixins: defineComponent(timeline, withTweetCapability, withScrollCapability);
+    function defineComponent(/*mixins*/) {
       // unpacking arguments by hand benchmarked faster
       var l = arguments.length;
       var mixins = new Array(l);
@@ -248,7 +248,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       Component.attachTo = attachTo;
       // enables extension of existing "base" Components
       Component.mixin = function() {
-        var newComponent = define(); //TODO: fix pretty print
+        var newComponent = defineComponent(); //TODO: fix pretty print
         var newPrototype = Object.create(Component.prototype);
         newPrototype.mixedIn = [].concat(Component.prototype.mixedIn);
         newPrototype.defaults = utils.merge(Component.prototype.defaults);
@@ -270,14 +270,14 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
       return Component;
     }
 
-    define.teardownAll = function() {
+    defineComponent.teardownAll = function() {
       registry.components.slice().forEach(function(c) {
         c.component.teardownAll();
       });
       registry.reset();
     };
 
-    return define;
+    return defineComponent;
   }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 
@@ -458,10 +458,12 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
         window.DEBUG = this;
       },
 
-      warn: function (message) {
+      warn: function (/*messages*/) {
         if (!window.console) { return; }
         var fn = (console.warn || console.log);
-        fn.call(console, this.toString() + ': ' + message);
+        var messages = [].slice.call(arguments);
+        messages.unshift(this.toString() + ':')
+        fn.apply(console, messages);
       },
 
       registry: registry,
@@ -549,7 +551,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
 
       name = typeof eventType == 'object' ? eventType.type : eventType;
 
-      logFilter = DEBUG.events.logFilter;
+      logFilter = window.DEBUG.events.logFilter;
 
       // no regex for you, actions...
       actionLoggable = logFilter.actions == 'all' || (logFilter.actions.indexOf(action) > -1);
@@ -1210,6 +1212,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* Copyright 201
     }
 
     function initDeprecatedAttributes(attrs) {
+      if (debug.enabled) {
+        debug.warn.call(this, 'defaultAttrs will be removed in a future version. Please use attributes.');
+      }
+
       // merge defaults with supplied options
       // put options in attr.__proto__ to avoid merge overhead
       var attr = Object.create(attrs);
