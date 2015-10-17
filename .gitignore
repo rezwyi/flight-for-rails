@@ -1,1 +1,8 @@
+.bundle/
 pkg/
+vendor/bundle
+spec/apps/**/db/*.sqlite*
+spec/apps/**/log/*.log
+spec/apps/**/tmp/
+gemfiles/*.lock
+coverage/
